@@ -282,7 +282,8 @@ async def main():
         "buffer_size": 5,
         "max_batch": 5,
         "num_samples": 1000,
-        "environments": ["affine:sat", "affine:abd", "affine:ded"]
+        "environments": ["affine:sat"]
+        # "environments": ["affine:sat", "affine:abd", "affine:ded"]
     }
 
     collector = AffineDataCollector(config)
