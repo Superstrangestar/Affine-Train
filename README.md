@@ -1,399 +1,162 @@
-# Affine Model Training
+# Affine
 
-Complete training pipeline for fine-tuning Affine-0004 (Qwen3-4B) model to achieve higher scores on reasoning and interactive agent tasks.
+Mine open reasoning.
 
-## Overview
+[Affine Discord](https://discord.com/invite/3T9X4Yn23e)
 
-This project provides a comprehensive training infrastructure to:
-- Fine-tune the Affine-0004 model using supervised learning and reinforcement learning
-- Train on 8 diverse environments (SAT, ABD, DED, WebShop, AlfWorld, BabyAI, SciWorld, TextCraft)
-- Evaluate performance using the same metrics as Affine validators
-- Deploy the trained model to HuggingFace Hub
+## Introduction
 
-## Features
+Affine is an incentivized RL environment which pays miners which make incremental improvements on a set of tasks (for instance, program abduction or coding). The mechanism is sybil-proof (you can't cheat by deploying multiple miners), decoy-proof (you can't cheat by packing models into certain environments), copy-proof (you can't cheat by stealing models), overfitting-proof (you can't cheat by overfitting to a single env).
 
-✨ **Comprehensive Training Pipeline**
-- Supervised Fine-Tuning (SFT) on reasoning tasks
-- Reinforcement Learning (PPO) on interactive agent tasks
-- Automatic data collection and preprocessing
-- Multi-environment training and evaluation
+How does Affine work? Affine validators incentivize miners to submit models to Subnet 64 on Bittensor (a.k.a Chutes) where they are inference load balanced and publicly available. These models are evaluated on a set of RL-environments with validators looking for the model which dominates the pareto frontier -- namely the model which outcompetes all other models on all envs (see `af validator`) The network is winners-take-all where miners are forced to copy, download and improve the pareto frontier model.
 
-🚀 **Efficient Fine-Tuning**
-- LoRA (Low-Rank Adaptation) for parameter-efficient training
-- Flash Attention 2 for fast inference
-- Gradient checkpointing for memory efficiency
-- Mixed precision training (BF16)
+Why affine? Directed incentives for RL have never been achieved. The ability to direct intelligence and aggregate the work-effort of a large non-permissioned group of individuals on RL tasks will unlock fast advancement in intelligence, we intend to commoditize reasoning (intelligence's highest form) and break the intelligence sound barrier.
 
-📊 **Advanced Evaluation**
-- Pareto dominance scoring (aligned with validators)
-- Bayesian confidence intervals
-- Per-environment and aggregated metrics
-- Comparison with baseline models
+## Installation
+```bash
+# Install uv Astral
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-🤗 **HuggingFace Integration**
-- Automatic model card generation
-- One-command deployment
-- Git LFS support for large files
+# Clone and install Affine
+git clone https://github.com/AffineFoundation/affine.git
+cd affine
+uv venv && source .venv/bin/activate && uv pip install -e .
 
-## Project Structure
-
-```
-model-training/
-├── config.yaml                 # Main configuration file
-├── requirements.txt            # Python dependencies
-├── setup.py                    # Package setup
-├── README.md                   # This file
-│
-├── src/                        # Source code
-│   ├── data/                   # Data collection modules
-│   │   ├── affine_data.py      # Affine tasks (SAT, ABD, DED)
-│   │   ├── agentgym_data.py    # AgentGym tasks (RL environments)
-│   │   └── dataset.py          # PyTorch dataset wrappers
-│   │
-│   ├── training/               # Training modules
-│   │   ├── model_loader.py     # Model loading utilities
-│   │   ├── sft_trainer.py      # Supervised fine-tuning
-│   │   └── rl_trainer.py       # Reinforcement learning (PPO)
-│   │
-│   ├── evaluation/             # Evaluation modules
-│   │   ├── evaluator.py        # Model evaluator
-│   │   └── metrics.py          # Metrics computation
-│   │
-│   ├── deployment/             # Deployment modules
-│   │   └── hf_deploy.py        # HuggingFace deployment
-│   │
-│   └── utils/                  # Utility modules
-│       ├── logger.py           # Logging setup
-│       └── config.py           # Configuration utilities
-│
-├── scripts/                    # Training scripts
-│   ├── 1_collect_data.py       # Data collection
-│   ├── 2_train_sft.py          # Supervised fine-tuning
-│   ├── 3_train_rl.py           # RL training
-│   ├── 4_evaluate.py           # Model evaluation
-│   ├── 5_deploy.py             # HuggingFace deployment
-│   └── run_full_pipeline.py    # Complete pipeline
-│
-├── data_cache/                 # Cached training data
-├── checkpoints/                # Training checkpoints
-├── models/                     # Saved models
-└── logs/                       # Training logs
+# Verify installation
+af
 ```
 
-## Quick Start
-
-### 1. Installation
+## Validating
+Set env vars, chutes api key, R2 write keys
 
 ```bash
-cd model-training
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Install package in development mode
-pip install -e .
+# Copy .env and fill out validator items
+cp .env.example .env
 ```
-
-### 2. Configuration
-
-Edit `config.yaml` to customize training parameters:
-
-```yaml
-model:
-  base_model_path: "../Affine-0004"
-
-training:
-  num_epochs: 3
-  batch_size: 2
-  learning_rate: 2.0e-5
-  use_lora: true
-  lora_r: 64
-
-# ... see config.yaml for full options
-```
-
-### 3. Run Training Pipeline
-
-**Option A: Complete Pipeline (Recommended)**
 
 ```bash
-python scripts/run_full_pipeline.py
+CHUTES_API_KEY=
+.
+.
+.
+R2_WRITE_ACCESS_KEY_ID=
+R2_WRITE_SECRET_ACCESS_KEY=
 ```
 
-This runs all steps automatically:
-1. Data collection
-2. Supervised fine-tuning
-3. RL training
-4. Evaluation
-5. Deployment
+(Recommended): Run the validator with docker and watchtower autoupdate.
+```bash
+# Run the validator with watchtower.
+docker-compose down && docker-compose pull && docker-compose up -d && docker-compose logs -f
+```
+Recreate docker in case of OOM
+```bash
+docker compose up -d --force-recreate
+```
+Run the validator using the local override (build local image) + base compose
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml down --remove-orphans
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build --remove-orphans
+docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f
+```
 
-**Option B: Step-by-Step**
+Run the validator locally(without docker)
+```bash
+# Start the validator with debug.
+af -vv validate
+```
+
+# Mining
+
+IMPORTANT: you require a ***developer enabled account*** on Chutes to mine. Normal API keys cannot deploy chutes right now.
+
+1. Set env vars.
+```bash
+# Copy .env and fill out validator items
+cp .env.example .env
+```
+
+2. Miners need a chutes developer account ( `chutes.ai` ), and you must fund your Chutes account to deploy miners.
 
 ```bash
-# Step 1: Collect training data
-python scripts/1_collect_data.py
-
-# Step 2: Supervised fine-tuning
-python scripts/2_train_sft.py
-
-# Step 3: RL training (optional but recommended)
-python scripts/3_train_rl.py
-
-# Step 4: Evaluate model
-python scripts/4_evaluate.py
-
-# Step 5: Deploy to HuggingFace
-export HF_TOKEN="your_token_here"
-python scripts/5_deploy.py
+chutes register
 ```
 
-## Training Details
+After registering, you will need to fund your Chutes account with $TAO.
+Your Chutes payment address can be found in `~/.chutes/config.ini`.
+Send TAO to this address before deploying models.
 
-### Supervised Fine-Tuning (SFT)
 
-Trains the model on:
-- **SAT Solving**: Boolean satisfiability problems
-- **Abduction (ABD)**: Reverse engineering inputs from code
-- **Deduction (DED)**: Code generation from problem descriptions
-
-Configuration:
-- LoRA rank: 64
-- Learning rate: 2e-5
-- Batch size: 2 (gradient accumulation: 8)
-- Epochs: 3
-
-### Reinforcement Learning (RL)
-
-Trains the model using PPO on interactive environments:
-- **WebShop**: E-commerce product search
-- **AlfWorld**: Household task completion
-- **BabyAI**: Grid-world navigation
-- **SciWorld**: Scientific experiments
-- **TextCraft**: Minecraft crafting
-
-Configuration:
-- Algorithm: PPO (Proximal Policy Optimization)
-- Clip range: 0.2
-- GAE lambda: 0.95
-- Gamma: 0.99
-
-### Evaluation
-
-Evaluates model performance using:
-- Binary accuracy (for Affine tasks)
-- Mean score and standard deviation
-- Bayesian confidence intervals (80%)
-- Success rate per environment
-- Pareto dominance scoring
-
-## Hardware Requirements
-
-**Minimum:**
-- GPU: 24GB VRAM (NVIDIA A10, RTX 3090, RTX 4090)
-- RAM: 32GB
-- Disk: 100GB free space
-
-**Recommended:**
-- GPU: 40GB+ VRAM (NVIDIA A100, H100)
-- RAM: 64GB
-- Disk: 200GB SSD
-
-**Training Time Estimates:**
-- Data collection: ~1 hour
-- SFT training: ~4-8 hours (depending on GPU)
-- RL training: ~8-16 hours
-- Evaluation: ~1 hour
-- Total: ~14-26 hours
-
-## Configuration Options
-
-### Key Configuration Parameters
-
-**Model:**
-- `base_model_path`: Path to Affine-0004 model
-- `use_flash_attention`: Enable Flash Attention 2
-- `torch_dtype`: Precision (bfloat16 recommended)
-
-**Training:**
-- `num_epochs`: Number of training epochs
-- `batch_size`: Per-device batch size
-- `learning_rate`: Learning rate
-- `use_lora`: Enable LoRA fine-tuning
-- `lora_r`: LoRA rank (higher = more parameters)
-
-**Data:**
-- `num_samples`: Number of training samples per environment
-- `train_split`: Training split ratio (default: 0.9)
-
-**RL Training:**
-- `ppo_epochs`: PPO update epochs
-- `num_rollouts`: Number of rollouts to collect
-- `clip_range`: PPO clip range
-
-**Evaluation:**
-- `num_eval_samples`: Samples per environment
-- `min_score_threshold`: Minimum acceptable score
-
-## Deployment
-
-### Prerequisites
-
+3. Register your miner to Affine (S120).
 ```bash
-# Set HuggingFace token
-export HF_TOKEN="your_token_here"
-
-# Or add to .env file
-echo "HF_TOKEN=your_token_here" > .env
+btcli subnet register --wallet.name <your cold> --wallet.hotkey <your hot>
 ```
 
-### Deploy to HuggingFace Hub
-
+4. Pull a model off the network.
 ```bash
-python scripts/5_deploy.py --model models/rl_final
+af -vvv pull <uid to pull> --model_path <i.e. ./my_model>
 ```
 
-This will:
-1. Create a model card with training details
-2. Upload model files to HuggingFace Hub
-3. Configure Git LFS for large files
-4. Return the model URL
-
-### Configuration
-
-Edit `config.yaml`:
-
-```yaml
-huggingface:
-  repo_name: "your-username/affine-model"
-  private: false
-  create_model_card: true
-```
-
-## Monitoring
-
-### Weights & Biases (W&B)
-
-Enable W&B tracking in `config.yaml`:
-
-```yaml
-tracking:
-  use_wandb: true
-  wandb_project: "affine-training"
-  wandb_entity: "your-username"
-```
-
-### Logs
-
-Training logs are saved to `logs/`:
-- `data-collection_*.log`
-- `sft-training_*.log`
-- `rl-training_*.log`
-- `evaluation_*.log`
-- `deployment_*.log`
-
-## Troubleshooting
-
-### Out of Memory (OOM)
-
-**Solutions:**
-1. Reduce batch size in `config.yaml`
-2. Enable gradient checkpointing
-3. Use 8-bit or 4-bit quantization
-4. Reduce LoRA rank
-
-```yaml
-training:
-  batch_size: 1
-  gradient_checkpointing: true
-```
-
-### Slow Training
-
-**Solutions:**
-1. Enable Flash Attention 2
-2. Use BF16 mixed precision
-3. Increase batch size (if memory allows)
-4. Reduce gradient accumulation steps
-
-### Data Collection Errors
-
-**Solutions:**
-1. Check internet connection (for R2 dataset)
-2. Verify test-code module is available
-3. Use cached data if available
-
-## Advanced Usage
-
-### Custom Environments
-
-Add custom environments in `config.yaml`:
-
-```yaml
-data:
-  affine:
-    environments:
-      - "affine:sat"
-      - "affine:abd"
-      - "affine:ded"
-      - "custom:my_env"  # Add your environment
-```
-
-### Hyperparameter Tuning
-
-Create multiple config files:
-
+5. Improve the model
 ```bash
-# configs/experiment1.yaml
-# configs/experiment2.yaml
-
-python scripts/run_full_pipeline.py --config configs/experiment1.yaml
+... magic RL stuff ...
 ```
 
-### Resume Training
+6. Upload your model to Hugging Face (manual, required before deploying).
+   - Create or choose an existing model repo (e.g. `<user>/Affine-<repo>`)
+   - Push your model artifacts and obtain the commit SHA you wish to deploy
+   - You are responsible for the HF upload process (e.g. `huggingface-cli`, `git lfs`)
 
-```yaml
-training:
-  resume_from_checkpoint: "checkpoints/checkpoint-1000"
+7. Deploy the HF repo+revision to Chutes.
+```bash
+af -vvv chutes_push --repo <user/repo> --revision <sha> --chutes-api-key ...
+
+### Configure Chutes deployment settings
+
+You can customize how your Chute is deployed (GPU type, concurrency, scaling, etc.) by editing the Chutes config we generate in code.
+
+- Open `affine/affine/cli.py`
+- Find the `deploy_to_chutes()` function inside the `chutes_push` command
+- Edit the arguments passed to `build_sglang_chute(...)` to match your needs
+
+Refer to the official Chutes documentation for all available options and best practices: [chutesai/chutes](https://github.com/chutesai/chutes).
+
+
+```
+This prints a JSON payload including `chute_id`. Keep it for the next step.
+
+8. Commit the deployment on-chain (separate from deployment).
+```bash
+af -vvv commit --repo <user/repo> --revision <sha> --chute-id <chute_id> --coldkey <your cold> --hotkey <your hot>
 ```
 
-## Performance Optimization Tips
+# SDK
+Affine is also an SDK you can use to generate and evaluate models envs.
+```python
+import affine as af
 
-1. **Use LoRA**: Reduces trainable parameters by 99%
-2. **Flash Attention 2**: 2-3x faster training
-3. **Gradient Checkpointing**: Reduces memory by ~40%
-4. **BF16 Training**: Faster than FP32, more stable than FP16
-5. **Larger Batch Size**: Better GPU utilization
-6. **Multi-GPU**: Use `accelerate` for distributed training
+# Optionally turn on logging 
+af.trace(); af.debug(); af.info()
 
-## Citation
+# Get all miner info or only for UID =5
+miners = await af.miners()
+miner = await af.miners( 5 )
 
-```bibtex
-@misc{affine-training-2024,
-  title={Affine Model Training Pipeline},
-  author={Your Name},
-  year={2024},
-  url={https://github.com/your-repo/affine-training}
-}
+# Generate a SAT challenge
+chal = await af.SAT.generate() 
+
+# Generate a bunch.
+chals = await af.ABDUCTION().many( 10 )
+chals = await af.DEDUCTION().many( 10 )
+
+# Query the model directly.
+# NOTE: A CHUTES_API_KEY .env value is required for this command.
+response = await af.query( chal.prompt, model = miner.model )
+
+# Evaluate the response
+evaluation = chal.evaluate( response ) 
+print( evaluation.score )
+
+# Async generator of results from last 100 blocks.
+async for res in af.dataset(100):
+    print (res)          # Result objects
 ```
-
-## License
-
-Apache 2.0
-
-## Acknowledgments
-
-- **Base Model**: [Affine-0004](https://huggingface.co/kiwikiw/Affine-0004) (Qwen3-4B)
-- **Training Framework**: HuggingFace Transformers, PEFT, TRL
-- **Evaluation**: Affine Subnet (Bittensor)
-- **Environments**: AgentGym, custom Affine tasks
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [your-repo/issues]
-- Discord: [your-discord-link]
-- Email: your-email@example.com
-
----
-
-**Happy Training! 🚀**
