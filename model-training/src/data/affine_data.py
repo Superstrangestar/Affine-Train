@@ -33,7 +33,8 @@ class AffineDataCollector:
         self.buffer_size = config.get("buffer_size", 5)
         self.max_batch = config.get("max_batch", 5)
         self.num_samples = config.get("num_samples", 10000)
-        self.environments = config.get("environments", ["affine:sat", "affine:abd", "affine:ded"])
+        self.environments = config.get("environments", ["affine:sat"])
+        # self.environments = config.get("environments", ["affine:sat", "affine:abd", "affine:ded"])
 
     async def collect_sat_samples(self, num_samples: int) -> List[AffineSample]:
         """Collect SAT solving samples"""
@@ -211,6 +212,7 @@ Write a complete program that reads from standard input and writes to standard o
 
             if env == "affine:sat":
                 samples = await self.collect_sat_samples(samples_per_env)
+                print(samples)
             elif env == "affine:abd":
                 samples = await self.collect_abd_samples(samples_per_env)
             elif env == "affine:ded":
